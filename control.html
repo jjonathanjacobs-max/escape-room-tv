@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Escape Room Bedieningspaneel</title>
+
+<style>
+  body {
+    background: #111;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding-top: 60px;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    margin-bottom: 40px;
+    text-shadow: 0 0 10px #00eaff;
+  }
+
+  .btn {
+    display: block;
+    width: 80%;
+    margin: 20px auto;
+    padding: 25px;
+    font-size: 2rem;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .next {
+    background: #00c853;
+    color: #fff;
+  }
+
+  .feedback {
+    background: #2962ff;
+    color: #fff;
+  }
+
+  .hint {
+    background: #ffea00;
+    color: #000;
+  }
+
+  .reset {
+    background: #ff1744;
+    color: #fff;
+  }
+
+  #status {
+    margin-top: 40px;
+    font-size: 1.4rem;
+    opacity: 0.8;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Game Master Paneel</h1>
+
+<button class="btn next" onclick="sendAction('NEXT')">▶️ Volgende vraag</button>
+<button class="btn feedback" onclick="sendAction('FEEDBACK')">🔙 Toon feedback</button>
+<button class="btn hint" onclick="sendAction('HINT')">💡 Toon hint</button>
+<button class="btn reset" onclick="sendAction('RESET')">🔄 Reset spel</button>
+
+<div id="status">Klaar…</div>
+
+<script>
+const sheetId = "1qmJfiJ1QGDh_ww98r1ym09fMf_yze_sg_M606lphJj0";
+
+function sendAction(action) {
+  document.getElementById("status").innerHTML = "Bezig…";
+
+  fetch(`https://script.google.com/macros/s/${sheetId}/exec?action=${action}`)
+    .then(() => {
+      document.getElementById("status").innerHTML = "✔️ Verstuurd: " + action;
+      setTimeout(() => {
+        document.getElementById("status").innerHTML = "Klaar…";
+      }, 1500);
+    })
+    .catch(() => {
+      document.getElementById("status").innerHTML = "❌ Fout bij verzenden";
+    });
+}
+</script>
+
+</body>
+</html>
