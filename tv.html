@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
@@ -28,7 +28,6 @@
     transition: color 0.3s ease, text-shadow 0.3s ease;
   }
 
-  /* Vraag rood oplichten bij fout */
   .foutFlash {
     color: #ff3333 !important;
     text-shadow: 0 0 35px #ff0000 !important;
@@ -43,7 +42,6 @@
     transition: opacity 0.5s ease-in-out;
   }
 
-  /* Feedback rood bij fout */
   .foutAntwoord {
     color: #ff3333 !important;
     text-shadow: 0 0 25px #ff0000 !important;
@@ -70,14 +68,14 @@
 const sheetId = "1qmJfiJ1QGDh_ww98r1ym09fMf_yze_sg_M606lphJj0";
 // --------------------------
 
-// URLs om gegevens op te halen
-const puzzelUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Puzzels&range=A2:D200`;
+// URLs
+const puzzelUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Puzzels&range=A2:E200`;
 const displayUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Display&range=A1:C1`;
 
 let puzzels = [];
 let huidigePuzzel = 1;
 
-// Haal alle puzzels op
+// Haal puzzels op
 async function laadPuzzels() {
   const response = await fetch(puzzelUrl);
   const text = await response.text();
@@ -86,19 +84,20 @@ async function laadPuzzels() {
   puzzels = json.table.rows.map(r => ({
     volgorde: r.c[0]?.v,
     vraag: r.c[1]?.v,
-    feedback: r.c[3]?.v
+    feedback: r.c[3]?.v,
+    hint: r.c[4]?.v
   }));
 }
 
-// Haal huidige status op
+// Haal display-status op
 async function updateDisplay() {
   const response = await fetch(displayUrl);
   const text = await response.text();
   const json = JSON.parse(text.substring(47, text.length - 2));
 
-  const status = json.table.rows[0].c[0]?.v;   // GOED / FOUT
-  huidigePuzzel = json.table.rows[0].c[1]?.v || 1; // B1
-  const actie = json.table.rows[0].c[2]?.v;    // C1 (NEXT / FEEDBACK / NONE)
+  const status = json.table.rows[0].c[0]?.v;
+  huidigePuzzel = json.table.rows[0].c[1]?.v || 1;
+  const actie = json.table.rows[0].c[2]?.v;
 
   toonVraag();
 
@@ -108,11 +107,14 @@ async function updateDisplay() {
   }
 
   if (status === "FOUT") {
-    foutHighlight();        // vraag rood
-    foutAntwoordHighlight(); // feedback rood
+    foutHighlight();
+    foutAntwoordHighlight();
+
+    setTimeout(() => {
+      resetFoutStatus();
+    }, 1200);
   }
 
-  // Manuele bediening
   if (actie === "NEXT") {
     huidigePuzzel++;
     toonVraag();
@@ -123,10 +125,20 @@ async function updateDisplay() {
     toonFeedback();
     resetActie();
   }
+
+  if (actie === "HINT") {
+    toonHint();
+    resetActie();
+  }
 }
 
 function resetActie() {
   fetch(`https://script.google.com/macros/s/${sheetId}/exec?reset=1`)
+  .catch(() => {});
+}
+
+function resetFoutStatus() {
+  fetch(`https://script.google.com/macros/s/${sheetId}/exec?status=NONE`)
   .catch(() => {});
 }
 
@@ -148,21 +160,21 @@ function toonFeedback() {
   }
 }
 
-function verbergFeedback() {
-  document.getElementById("feedback").style.opacity = 0;
+function toonHint() {
+  const puzzel = puzzels.find(p => p.volgorde === huidigePuzzel);
+  if (puzzel && puzzel.hint) {
+    const fb = document.getElementById("feedback");
+    fb.innerHTML = puzzel.hint;
+    fb.style.opacity = 1;
+  }
 }
 
-/* --- Vraag rood oplichten --- */
 function foutHighlight() {
   const vraag = document.getElementById("vraag");
   vraag.classList.add("foutFlash");
-
-  setTimeout(() => {
-    vraag.classList.remove("foutFlash");
-  }, 1000);
+  setTimeout(() => vraag.classList.remove("foutFlash"), 1000);
 }
 
-/* --- Feedback rood oplichten --- */
 function foutAntwoordHighlight() {
   const fb = document.getElementById("feedback");
   fb.innerHTML = "Fout antwoord!";
@@ -175,7 +187,7 @@ function foutAntwoordHighlight() {
   }, 1200);
 }
 
-// --- VUURWERK EFFECT ---
+// --- Vuurwerk ---
 const canvas = document.getElementById("fireworks");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
